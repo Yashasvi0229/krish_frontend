@@ -1,0 +1,5 @@
+# Backend API — proxied so frontend can keep using /api base URL (no CORS)
+/api/*  https://gnc-invoice-backend.onrender.com/api/:splat  200
+
+# SPA fallback — every unmatched URL serves index.html for client-side routing
+/*      /index.html                                          200
