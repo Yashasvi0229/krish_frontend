@@ -112,11 +112,10 @@ export const jobApi = {
 // ============================================================================
 // Flow the frontend runs:
 //   1. POST /jobs/gmail-search  { claim_no OR file_name }   → job_id
-//   2. Poll /jobs/{job_id} until COMPLETED (this stores emails+attachments
-//      and creates the Claim row if new).
-//   3. GET /debug/claims/latest → find the claim_id (or add a lookup endpoint later).
-//   4. POST /claims/{claim_id}/analyze  { force_refresh }    → job_id for analysis
-//   5. Poll analysis job → result.draft_id
+//   2. Poll /jobs/{job_id} until COMPLETED (this stores emails+attachments,
+//      creates the Claim row, and puts claim_id in job.result_data).
+//   3. POST /claims/{claim_id}/analyze  → job_id for analysis
+//   4. Poll analysis job → result.draft_id
 export const claimApi = {
   searchGmail: (payload) => api.post('/jobs/gmail-search', payload),
   analyze: (claimId, payload) =>
@@ -124,10 +123,6 @@ export const claimApi = {
   getAnalyses: (claimId) => api.get(`/claims/${claimId}/analyses`),
   listDrafts: (claimId) => api.get(`/claims/${claimId}/drafts`),
   listInvoices: (claimId) => api.get(`/claims/${claimId}/invoices`),
-  // Helper for the search flow — the frontend needs to look up the claim
-  // that a gmail-search job produced. We use the debug endpoint until a
-  // proper "get latest claim for this search" endpoint is added.
-  findLatest: () => api.get('/debug/claims/latest'),
 };
 
 // ============================================================================
