@@ -104,11 +104,16 @@ export default function ProcessingLoader() {
         cleanup();
 
         if (phase === 'A') {
-          // Gmail sync finished → find the claim and kick off analysis.
+          // Gmail sync finished — the worker stored the claim_id in the job's
+          // result_data. Read it directly instead of hitting a lookup endpoint
+          // (which may not exist on the current backend).
           try {
-            const { data: claims } = await claimApi.findLatest();
-            const cid = claims?.[0]?.id;
-            if (!cid) throw new Error('Claim not found after Gmail sync.');
+            const cid = data.result_data?.claim_id;
+            if (!cid) {
+              throw new Error(
+                'Backend did not include claim_id in job result. Please contact support.'
+              );
+            }
             setClaimId(cid);
 
             const { data: analyzeJob } = await claimApi.analyze(cid, {
