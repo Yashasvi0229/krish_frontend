@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Download, ArrowLeft, ExternalLink, Copy, XCircle } from 'lucide-react';
+import { Download, ArrowLeft, ExternalLink, Copy, XCircle, AlertTriangle } from 'lucide-react';
 import Button from '../components/common/Button';
 import Breadcrumb from '../components/common/Breadcrumb';
 import StatusPill from '../components/common/StatusPill';
@@ -96,6 +96,17 @@ export default function InvoicePreview() {
   const loss = snap.loss_details || {};
   const lines = (snap.line_items || []).filter((l) => !l.removed);
 
+  // Data-integrity flag: if the invoice has a real amount but no line
+  // items or empty details, the snapshot is corrupt (usually created
+  // before validation was added). Show a banner so the reviewer knows
+  // not to send this to a client as-is.
+  const hasRealAmount = Number(inv.amount || 0) > 0;
+  const isMissingData = hasRealAmount && (
+    lines.length === 0 ||
+    !client.name ||
+    !insured.insured_name
+  );
+
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
       <Breadcrumb
@@ -128,6 +139,22 @@ export default function InvoicePreview() {
           Download Excel
         </Button>
       </div>
+
+      {isMissingData && (
+        <div className="mb-4 rounded-md bg-yellow-50 border border-yellow-300 p-3 sm:p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
+          <div className="flex-1 text-body">
+            <p className="font-semibold text-yellow-900">Invoice data incomplete</p>
+            <p className="text-small text-slate-700 mt-1">
+              This invoice was finalized without complete data (missing
+              client name, insured, or line items). The total shown may
+              not match the actual work. Review carefully before sending
+              to a client — consider cancelling and re-creating from a
+              fresh Gmail search.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column — details */}
