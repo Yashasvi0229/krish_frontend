@@ -140,6 +140,11 @@ export const draftApi = {
   get: (draftId) => api.get(`/drafts/${draftId}`),
   history: (draftId) => api.get(`/drafts/${draftId}/history`),
 
+  // Global draft listing (dashboard "Pending Review" section).
+  //   pending=true  → all DRAFT + PENDING_* in one call
+  //   status=X       → a specific stage
+  list: (params) => api.get('/drafts', { params }),
+
   // Line item CRUD
   editLine: (draftId, lineNumber, patch) =>
     api.patch(`/drafts/${draftId}/line-items/${lineNumber}`, patch),
