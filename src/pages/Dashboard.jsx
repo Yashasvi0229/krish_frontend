@@ -20,7 +20,7 @@ import Pagination from '../components/common/Pagination';
 import { TableSkeleton, StatCardSkeleton } from '../components/common/LoadingSkeleton';
 import useAuth from '../hooks/useAuth';
 import useDebounce from '../hooks/useDebounce';
-import { dashboardApi, invoiceApi, clientApi } from '../services/api';
+import { dashboardApi, invoiceApi, clientApi, draftApi } from '../services/api';
 import {
   formatCurrencyPrefixed,
   formatDate,
@@ -64,6 +64,16 @@ export default function Dashboard() {
   const statsQ = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: () => dashboardApi.getStats().then((r) => r.data),
+    refetchOnWindowFocus: false,
+  });
+
+  // Pending drafts — everything the reviewer needs to look at.
+  // Kept small (limit 5) so the section reads at a glance; user can
+  // click "See all" to jump to a dedicated view later.
+  const pendingDraftsQ = useQuery({
+    queryKey: ['dashboard-pending-drafts'],
+    queryFn: () =>
+      draftApi.list({ pending: true, limit: 5, offset: 0 }).then((r) => r.data),
     refetchOnWindowFocus: false,
   });
 
@@ -179,6 +189,17 @@ export default function Dashboard() {
               label="Pending Review"
               value={`${stats?.pending_review ?? 0} drafts`}
               subText="Requires your attention"
+              onClick={
+                (pendingDraftsQ.data?.items?.length ?? 0) > 0
+                  ? () => {
+                      // Smooth-scroll to the pending drafts section that
+                      // renders below when there's at least one item.
+                      document
+                        .querySelector('[data-pending-drafts]')
+                        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  : undefined
+              }
             />
             <StatCard
               icon={CheckCircle}
@@ -201,6 +222,64 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {/* Pending Reviews section — visible if there's any pending work */}
+      {pendingDraftsQ.data?.items?.length > 0 && (
+        <div
+          data-pending-drafts
+          className="bg-white rounded-lg shadow-card border border-yellow-200 mb-6 overflow-hidden"
+        >
+          <div className="px-4 py-3 bg-yellow-50 border-b border-yellow-200 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-yellow-600" />
+              <h2 className="text-h3 text-slate-900">
+                Pending Reviews ({pendingDraftsQ.data.total})
+              </h2>
+            </div>
+            <p className="text-small text-slate-500 hidden sm:block">
+              Drafts waiting for your attention
+            </p>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {pendingDraftsQ.data.items.map((d) => (
+              <button
+                key={d.id}
+                onClick={() => navigate(`/invoices/review/${d.id}`)}
+                className="w-full text-left p-3 sm:p-4 hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-body font-semibold text-primary">
+                        {d.invoice_no}
+                      </span>
+                      <StatusPill status={d.status} />
+                      {d.has_duplicate_warning && (
+                        <span className="inline-flex items-center gap-1 text-small text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full">
+                          <AlertTriangle className="h-3 w-3" />
+                          Duplicate
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-small text-slate-600 mt-1 truncate">
+                      {d.client_name || '—'} · {d.insured_name || '—'}
+                      {d.claim_no && ` · Claim ${d.claim_no}`}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-body font-semibold text-slate-900">
+                      {formatCurrencyPrefixed(d.grand_total, d.currency)}
+                    </p>
+                    <p className="text-small text-slate-500">
+                      Created {formatDate(d.created_at)}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filter bar — stacks on <md */}
       <div className="bg-white rounded-lg shadow-card border border-slate-200 mb-6 p-3 sm:p-4">
