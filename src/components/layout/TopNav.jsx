@@ -12,6 +12,7 @@ import {
 import clsx from 'clsx';
 import useAuth from '../../hooks/useAuth';
 import { authApi } from '../../services/api';
+import Logo from '../common/Logo';
 
 /**
  * TopNav — fixed 64px, three regions.
@@ -88,9 +89,7 @@ export default function TopNav() {
 
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
-            <div className="h-9 w-9 rounded-md bg-primary flex items-center justify-center text-white font-bold">
-              G
-            </div>
+            <Logo size="md" />
             <span className="text-body font-semibold text-slate-900 hidden sm:inline">
               GNC Invoice Automation
             </span>
