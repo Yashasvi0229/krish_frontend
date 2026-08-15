@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import Button from '../components/common/Button';
 import { Input } from '../components/common/Input';
+import Logo from '../components/common/Logo';
 import useAuth from '../hooks/useAuth';
 import { authApi } from '../services/api';
 
@@ -80,8 +81,8 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Brand block */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary text-white text-3xl font-bold mb-4 shadow-md">
-              G
+            <div className="inline-flex items-center justify-center mb-4">
+              <Logo size="xl" />
             </div>
             <h1 className="text-h1 text-primary mb-2">
               GNC Invoice Automation
