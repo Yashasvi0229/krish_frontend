@@ -177,14 +177,20 @@ export default function ProcessingLoader() {
     }
 
     function startPolling() {
-      // Adaptive polling interval:
-      //   Start at 4s (base rate — well under Render/Cloudflare's
-      //   free-tier ~100 req/min per-IP soft limit for a single tab).
-      //   On 429 responses, double the interval up to 20s so the client
-      //   automatically backs off during Cloudflare throttling. Reset
-      //   to base once a request succeeds.
-      const BASE_INTERVAL_MS = 4000;
-      const MAX_INTERVAL_MS = 20000;
+      // Adaptive polling — tuned for Render free tier behind Cloudflare
+      // which throttles at ~100 req/min per IP.
+      //
+      // Base 6s (was 4s): a single tab now generates only 10 req/min for
+      //   job status, leaving 90 req/min budget for other pages (dashboard,
+      //   navigation, etc.) even under heavy multi-tab use.
+      // Backoff to 30s: extreme cooling-off period for post-rate-limit
+      //   recovery; gets the IP out of Cloudflare's penalty box fast.
+      // Recovery: on any successful poll, snap back to base.
+      // Long-running jobs (92-email claims etc.) are fine — the backend
+      // keeps working regardless of how often we check; polling just
+      // updates the UI progress bar.
+      const BASE_INTERVAL_MS = 6000;
+      const MAX_INTERVAL_MS = 30000;
       let currentInterval = BASE_INTERVAL_MS;
 
       const tick = async () => {
@@ -197,8 +203,11 @@ export default function ProcessingLoader() {
             resetTimer();
           }
         } catch (err) {
-          if (err?.response?.status === 429) {
-            // Rate limited — double until MAX, then hold.
+          if (err?.response?.status === 429 || err?.message === 'Network Error') {
+            // Rate-limited or backend hiccup — back off.
+            // Network Error also included because Cloudflare-issued 429s
+            // sometimes come through as generic network failures (no
+            // response body reaches axios).
             currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL_MS);
             resetTimer();
           }
