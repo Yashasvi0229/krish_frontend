@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Check,
@@ -55,6 +55,10 @@ const ALL_STEPS = [...PHASE_A_STEPS, ...PHASE_B_STEPS];
 
 export default function ProcessingLoader() {
   const { jobId: initialJobId } = useParams();
+  // Force-refresh comes from the search page as ?force_refresh=true.
+  // Persisted in the URL so a page refresh mid-processing preserves it.
+  const [searchParams] = useSearchParams();
+  const forceRefresh = searchParams.get('force_refresh') === 'true';
   const navigate = useNavigate();
 
   // We track BOTH phases in one flat state object.
@@ -117,7 +121,7 @@ export default function ProcessingLoader() {
             setClaimId(cid);
 
             const { data: analyzeJob } = await claimApi.analyze(cid, {
-              force_refresh: false,
+              force_refresh: forceRefresh,
             });
             setPhase('B');
             setJob(null);
@@ -173,14 +177,41 @@ export default function ProcessingLoader() {
     }
 
     function startPolling() {
-      pollRef.current = setInterval(async () => {
+      // Adaptive polling interval:
+      //   Start at 4s (base rate — well under Render/Cloudflare's
+      //   free-tier ~100 req/min per-IP soft limit for a single tab).
+      //   On 429 responses, double the interval up to 20s so the client
+      //   automatically backs off during Cloudflare throttling. Reset
+      //   to base once a request succeeds.
+      const BASE_INTERVAL_MS = 4000;
+      const MAX_INTERVAL_MS = 20000;
+      let currentInterval = BASE_INTERVAL_MS;
+
+      const tick = async () => {
         try {
           const res = await jobApi.get(activeJobId);
           onJobUpdate(res.data);
-        } catch (_err) {
-          /* silent — will retry next tick */
+          // Success — snap back to base cadence.
+          if (currentInterval !== BASE_INTERVAL_MS) {
+            currentInterval = BASE_INTERVAL_MS;
+            resetTimer();
+          }
+        } catch (err) {
+          if (err?.response?.status === 429) {
+            // Rate limited — double until MAX, then hold.
+            currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL_MS);
+            resetTimer();
+          }
+          /* other errors — silent retry on next tick */
         }
-      }, 2000);
+      };
+
+      const resetTimer = () => {
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = setInterval(tick, currentInterval);
+      };
+
+      pollRef.current = setInterval(tick, currentInterval);
     }
 
     // Fire one immediate GET so the UI doesn't sit at 0% before the first
