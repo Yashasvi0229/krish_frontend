@@ -177,50 +177,14 @@ export default function ProcessingLoader() {
     }
 
     function startPolling() {
-      // Adaptive polling — tuned for Render free tier behind Cloudflare
-      // which throttles at ~100 req/min per IP.
-      //
-      // Base 6s (was 4s): a single tab now generates only 10 req/min for
-      //   job status, leaving 90 req/min budget for other pages (dashboard,
-      //   navigation, etc.) even under heavy multi-tab use.
-      // Backoff to 30s: extreme cooling-off period for post-rate-limit
-      //   recovery; gets the IP out of Cloudflare's penalty box fast.
-      // Recovery: on any successful poll, snap back to base.
-      // Long-running jobs (92-email claims etc.) are fine — the backend
-      // keeps working regardless of how often we check; polling just
-      // updates the UI progress bar.
-      const BASE_INTERVAL_MS = 6000;
-      const MAX_INTERVAL_MS = 30000;
-      let currentInterval = BASE_INTERVAL_MS;
-
-      const tick = async () => {
+      pollRef.current = setInterval(async () => {
         try {
           const res = await jobApi.get(activeJobId);
           onJobUpdate(res.data);
-          // Success — snap back to base cadence.
-          if (currentInterval !== BASE_INTERVAL_MS) {
-            currentInterval = BASE_INTERVAL_MS;
-            resetTimer();
-          }
-        } catch (err) {
-          if (err?.response?.status === 429 || err?.message === 'Network Error') {
-            // Rate-limited or backend hiccup — back off.
-            // Network Error also included because Cloudflare-issued 429s
-            // sometimes come through as generic network failures (no
-            // response body reaches axios).
-            currentInterval = Math.min(currentInterval * 2, MAX_INTERVAL_MS);
-            resetTimer();
-          }
-          /* other errors — silent retry on next tick */
+        } catch (_err) {
+          /* silent — will retry next tick */
         }
-      };
-
-      const resetTimer = () => {
-        if (pollRef.current) clearInterval(pollRef.current);
-        pollRef.current = setInterval(tick, currentInterval);
-      };
-
-      pollRef.current = setInterval(tick, currentInterval);
+      }, 2000);
     }
 
     // Fire one immediate GET so the UI doesn't sit at 0% before the first
