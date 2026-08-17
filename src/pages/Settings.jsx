@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { User, Mail, Info, LogOut, CheckCircle, XCircle } from 'lucide-react';
+import { User, Mail, LogOut, CheckCircle, XCircle } from 'lucide-react';
 import Button from '../components/common/Button';
 import ConfirmModal from '../components/common/ConfirmModal';
 import useAuth from '../hooks/useAuth';
@@ -14,16 +14,14 @@ import { authApi, gmailApi } from '../services/api';
  * Sections:
  *   * Profile      — shows JWT-decoded identity (no update endpoint yet)
  *   * Gmail        — status + connect/disconnect flow
- *   * About        — version, links
  *   * Sign Out     — clears local state + calls /auth/signout
  *
- * Removed vs mockup: Notifications, Preferences, Sessions — those need
- * backend endpoints we haven't built yet.
+ * Removed: About (unnecessary product info), Notifications, Preferences,
+ * Sessions — those need backend endpoints we haven't built yet.
  */
 const SECTIONS = [
   { key: 'profile', label: 'Profile', icon: User },
   { key: 'gmail',   label: 'Gmail',   icon: Mail },
-  { key: 'about',   label: 'About',   icon: Info },
 ];
 
 export default function Settings() {
@@ -82,7 +80,6 @@ export default function Settings() {
         <div className="flex-1 min-w-0">
           {section === 'profile' && <ProfileSection user={user} />}
           {section === 'gmail' && <GmailSection />}
-          {section === 'about' && <AboutSection />}
 
           {/* Sign out shows below on mobile */}
           <div className="lg:hidden mt-4">
@@ -216,13 +213,11 @@ function GmailSection() {
   );
 }
 
-
-
-function Row({ label, value }) {
+function Card({ title, children }) {
   return (
-    <div className="flex justify-between border-b border-slate-100 pb-2 last:border-0">
-      <span className="text-slate-500">{label}</span>
-      <span className="text-slate-800 font-medium">{value}</span>
+    <div className="bg-white rounded-lg shadow-card border border-slate-200 p-4 sm:p-6">
+      <h2 className="text-h3 text-slate-900 mb-4">{title}</h2>
+      {children}
     </div>
   );
 }
