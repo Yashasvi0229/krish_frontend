@@ -85,7 +85,7 @@ export default function Login() {
               <Logo size="xl" />
             </div>
             <h1 className="text-h1 text-primary mb-2">
-              GNC Invoice Automation
+               Invoice Automation
             </h1>
             <p className="text-body text-slate-600">
               Streamline your invoice preparation with AI-powered automation
