@@ -216,28 +216,7 @@ function GmailSection() {
   );
 }
 
-function AboutSection() {
-  return (
-    <Card title="About">
-      <div className="space-y-3 text-body text-slate-700">
-        <Row label="Application" value="GNC Invoice Automation" />
-        <Row label="Version" value="1.0.0" />
-        <Row label="Backend" value="FastAPI + PostgreSQL" />
-        <Row label="AI Model" value="OpenAI GPT-4o mini" />
-        <Row label="Support" value="support@gncgroup.ca" />
-      </div>
-    </Card>
-  );
-}
 
-function Card({ title, children }) {
-  return (
-    <div className="bg-white rounded-lg shadow-card border border-slate-200 p-4 sm:p-6">
-      <h2 className="text-h3 text-slate-900 mb-4">{title}</h2>
-      {children}
-    </div>
-  );
-}
 
 function Row({ label, value }) {
   return (
