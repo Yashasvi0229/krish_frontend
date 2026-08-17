@@ -91,7 +91,7 @@ export default function TopNav() {
           <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
             <Logo size="md" />
             <span className="text-body font-semibold text-slate-900 hidden sm:inline">
-              GNC Invoice Automation
+              Invoice Automation
             </span>
             <span className="text-body font-semibold text-slate-900 sm:hidden">
               GNC
